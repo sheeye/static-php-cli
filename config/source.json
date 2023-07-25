@@ -100,6 +100,15 @@
             "path": "LICENSE.TXT"
         }
     },
+    "gettext": {
+        "type": "filelist",
+        "url": "https://ftp.gnu.org/pub/gnu/gettext/",
+        "regex": "/href=\"(?<file>gettext-(?<version>[^\"]+)\\.tar\\.gz)\"/",
+        "license": {
+            "type": "file",
+            "path": "COPYING"
+        }
+    },
     "gmp": {
         "type": "ghtagtar",
         "repo": "alisw/GMP",

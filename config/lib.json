@@ -84,6 +84,18 @@
             "brotli"
         ]
     },
+    "gettext": {
+        "source": "gettext",
+        "static-libs-unix": [
+            "libgettextpo.a",
+            "libintl.a"
+        ],
+        "lib-depends": [
+            "libiconv",
+            "libxml2",
+            "ncurses"
+        ]
+    },
     "gmp": {
         "source": "gmp",
         "static-libs-unix": [
