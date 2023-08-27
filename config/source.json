@@ -254,6 +254,15 @@
             "path": "Copyright"
         }
     },
+    "libxslt": {
+        "type": "filelist",
+        "url": "https://download.gnome.org/sources/libxslt/1.1/",
+        "regex": "/href=\"(?<file>libxslt-(?<version>[^\"]+)\\.tar\\.xz)\"/",
+        "license": {
+            "type": "file",
+            "text": "COPYING"
+        }
+    },
     "libyaml": {
         "type": "ghrel",
         "repo": "yaml/libyaml",
