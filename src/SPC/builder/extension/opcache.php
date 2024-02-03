@@ -19,7 +19,7 @@ class opcache extends Extension
     public function getUnixConfigureArg(): string
     {
         if ($this->builder->getPHPVersionID() < 80000) {
-            throw new WrongUsageException('Statically compiled PHP with Zend Opcache only available for PHP >= 8.0 !');
+            //throw new WrongUsageException('Statically compiled PHP with Zend Opcache only available for PHP >= 8.0 !');
         }
         return '--enable-opcache';
     }
