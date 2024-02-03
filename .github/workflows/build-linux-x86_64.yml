@@ -25,8 +25,8 @@ on:
       build-fpm:
         description: build fpm binary
         type: boolean
-      with-libs:
-        description: --with-libs
+      build-args:
+        description: additional build arguments
         type: string
         default: '--with-libs freetype,libjpeg,libavif,libwebp'
       extensions:
@@ -82,7 +82,7 @@ jobs:
         run: CACHE_API_EXEC=yes ./bin/spc-alpine-docker download --with-php=${{ inputs.version }} --for-extensions=${{ inputs.extensions }} ${{ env.SPC_BUILD_DEBUG }}
 
       # Run build command
-      - run: ./bin/spc-alpine-docker build ${{ inputs.extensions }} ${{ inputs.with-libs }} ${{ env.SPC_BUILD_DEBUG }} ${{ env.SPC_BUILD_CLI }} ${{ env.SPC_BUILD_MICRO }} ${{ env.SPC_BUILD_FPM }}
+      - run: ./bin/spc-alpine-docker build ${{ inputs.extensions }} ${{ inputs.build-args }} ${{ env.SPC_BUILD_DEBUG }} ${{ env.SPC_BUILD_CLI }} ${{ env.SPC_BUILD_MICRO }} ${{ env.SPC_BUILD_FPM }}
 
       # Upload cli executable
       - if: ${{ inputs.build-cli == true }}
