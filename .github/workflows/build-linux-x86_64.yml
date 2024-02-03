@@ -29,7 +29,7 @@ on:
         description: extensions to compile (comma separated)
         required: true
         type: string
-        default: 'bcmath,bz2,calendar,ctype,curl,dom,exif,fileinfo,filter,ftp,gd,gmp,iconv,xml,mbstring,mbregex,mysqlnd,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,redis,session,simplexml,soap,sockets,sqlite3,tokenizer,xmlwriter,xmlreader,zlib,zip,mysqli,opcache --with-libs=freetype,libjpeg,libavif,libwebp'
+        default: 'bcmath,bz2,calendar,ctype,curl,dom,exif,fileinfo,filter,ftp,gd,gmp,iconv,xml,mbstring,mbregex,mysqlnd,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,redis,session,simplexml,soap,sockets,sqlite3,tokenizer,xmlwriter,xmlreader,zlib,zip,mysqli,opcache'
       debug:
         type: boolean
 
@@ -67,11 +67,11 @@ jobs:
 
       # With target select: cli, micro or both
       - if: ${{ inputs.build-cli == true }}
-        run: echo "SPC_BUILD_CLI=--build-cli" >> $GITHUB_ENV
+        run: echo "SPC_BUILD_CLI=--build-cli --with-libs=freetype,libjpeg,libavif,libwebp" >> $GITHUB_ENV
       - if: ${{ inputs.build-micro == true }}
-        run: echo "SPC_BUILD_MICRO=--build-micro" >> $GITHUB_ENV
+        run: echo "SPC_BUILD_MICRO=--build-micro --with-libs=freetype,libjpeg,libavif,libwebp" >> $GITHUB_ENV
       - if: ${{ inputs.build-fpm == true }}
-        run: echo "SPC_BUILD_FPM=--build-fpm" >> $GITHUB_ENV
+        run: echo "SPC_BUILD_FPM=--build-fpm --with-libs=freetype,libjpeg,libavif,libwebp" >> $GITHUB_ENV
 
       # If there's no dependencies cache, fetch sources, with or without debug
       - if: steps.cache-download.outputs.cache-hit != 'true'
