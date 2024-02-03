@@ -3,8 +3,12 @@
 declare(strict_types=1);
 
 use Psr\Log\LoggerInterface;
+use SPC\builder\BuilderBase;
+use SPC\builder\BuilderProvider;
+use SPC\exception\RuntimeException;
 use SPC\exception\WrongUsageException;
 use SPC\util\UnixShell;
+use SPC\util\WindowsCmd;
 use ZM\Logger\ConsoleLogger;
 
 /**
@@ -60,6 +64,7 @@ function osfamily2dir(): string
         'Windows', 'WINNT', 'Cygwin' => 'windows',
         'Darwin' => 'macos',
         'Linux' => 'linux',
+        'BSD' => 'freebsd',
         default => throw new WrongUsageException('Not support os: ' . PHP_OS_FAMILY),
     };
 }
@@ -67,7 +72,7 @@ function osfamily2dir(): string
 /**
  * Execute the shell command, and the output will be directly printed in the terminal. If there is an error, an exception will be thrown
  *
- * @throws \SPC\exception\RuntimeException
+ * @throws RuntimeException
  */
 function f_passthru(string $cmd): ?bool
 {
@@ -85,7 +90,7 @@ function f_passthru(string $cmd): ?bool
     }
     $ret = passthru($cmd, $code);
     if ($code !== 0) {
-        throw new \SPC\exception\RuntimeException('Command run failed with code[' . $code . ']: ' . $cmd, $code);
+        throw new RuntimeException('Command run failed with code[' . $code . ']: ' . $cmd, $code);
     }
     return $ret;
 }
@@ -109,7 +114,38 @@ function f_mkdir(string $directory, int $permissions = 0777, bool $recursive = f
     return mkdir($directory, $permissions, $recursive);
 }
 
+function f_putenv(string $env): bool
+{
+    logger()->debug('Setting env: ' . $env);
+    return putenv($env);
+}
+
 function shell(?bool $debug = null): UnixShell
 {
     return new UnixShell($debug);
+}
+
+function cmd(?bool $debug = null): WindowsCmd
+{
+    return new WindowsCmd($debug);
+}
+
+/**
+ * Get current builder.
+ *
+ * @throws WrongUsageException
+ */
+function builder(): BuilderBase
+{
+    return BuilderProvider::getBuilder();
+}
+
+/**
+ * Get current patch point.
+ *
+ * @throws WrongUsageException
+ */
+function patch_point(): string
+{
+    return BuilderProvider::getBuilder()->getPatchPoint();
 }

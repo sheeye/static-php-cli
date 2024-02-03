@@ -26,8 +26,9 @@ trait freetype
         $suggested .= ' ';
 
         shell()->cd($this->source_dir)
+            ->exec('sh autogen.sh')
             ->exec(
-                "{$this->builder->configure_env} ./configure " .
+                './configure ' .
                 '--enable-static --disable-shared --without-harfbuzz --prefix= ' .
                 $suggested
             )

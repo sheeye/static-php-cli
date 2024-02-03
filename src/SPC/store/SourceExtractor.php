@@ -52,16 +52,19 @@ class SourceExtractor
         // start check
         foreach ($sources_extracted as $source => $item) {
             if (Config::getSource($source) === null) {
-                throw new WrongUsageException("Source [{$source}] not exists, please check name and correct it !");
+                throw new WrongUsageException("Source [{$source}] does not exist, please check the name and correct it !");
             }
             if (!isset($lock[$source])) {
                 throw new WrongUsageException('Source [' . $source . '] not downloaded or not locked, you should download it first !');
             }
 
             // check source dir exist
-            $check = $lock[$source]['move_path'] === null ? SOURCE_PATH . '/' . $source : SOURCE_PATH . '/' . $lock[$source]['move_path'];
+            $check = $lock[$source]['move_path'] === null ? (SOURCE_PATH . '/' . $source) : (SOURCE_PATH . '/' . $lock[$source]['move_path']);
             if (!is_dir($check)) {
+                logger()->debug('Extracting source [' . $source . '] to ' . $check . ' ...');
                 FileSystem::extractSource($source, DOWNLOAD_PATH . '/' . ($lock[$source]['filename'] ?? $lock[$source]['dirname']), $lock[$source]['move_path']);
+            } else {
+                logger()->debug('Source [' . $source . '] already extracted in ' . $check . ', skip !');
             }
         }
     }

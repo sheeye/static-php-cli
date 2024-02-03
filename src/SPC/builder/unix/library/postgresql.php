@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SPC\builder\unix\library;
 
+use SPC\builder\linux\library\LinuxLibraryBase;
 use SPC\builder\macos\library\MacOSLibraryBase;
 use SPC\exception\FileSystemException;
 use SPC\exception\RuntimeException;
@@ -18,25 +19,41 @@ trait postgresql
     protected function build(): void
     {
         $builddir = BUILD_ROOT_PATH;
-        $env = $this->builder->configure_env;
-        $envs = $env;
-        $packages = 'openssl zlib  readline libxml-2.0'; // icu-uc icu-io icu-i18n libzstd
+        $envs = '';
+        $packages = 'zlib openssl readline libxml-2.0';
+        $optional_packages = [
+            'zstd' => 'libzstd',
+            // 'ldap' => 'ldap',
+            'libxslt' => 'libxslt',
+            'icu' => 'icu-i18n',
+        ];
 
-        $pkgconfig_executable = $builddir . '/bin/pkg-config';
-        $output = shell()->execWithResult($env . " {$pkgconfig_executable} --cflags-only-I --static " . $packages);
+        foreach ($optional_packages as $lib => $pkg) {
+            if ($this->getBuilder()->getLib($lib)) {
+                $packages .= ' ' . $pkg;
+                $output = shell()->execWithResult("pkg-config --static {$pkg}");
+                logger()->info(var_export($output[1], true));
+            }
+        }
+
+        $output = shell()->execWithResult("pkg-config --cflags-only-I --static {$packages}");
         if (!empty($output[1][0])) {
             $cppflags = $output[1][0];
             $envs .= " CPPFLAGS=\"{$cppflags}\"";
         }
-        $output = shell()->execWithResult($env . " {$pkgconfig_executable} --libs-only-L --static " . $packages);
+        $output = shell()->execWithResult("pkg-config --libs-only-L --static {$packages}");
         if (!empty($output[1][0])) {
             $ldflags = $output[1][0];
             $envs .= $this instanceof MacOSLibraryBase ? " LDFLAGS=\"{$ldflags}\" " : " LDFLAGS=\"{$ldflags} -static\" ";
         }
-        $output = shell()->execWithResult($env . " {$pkgconfig_executable} --libs-only-l --static " . $packages);
+        $output = shell()->execWithResult("pkg-config --libs-only-l --static {$packages}");
         if (!empty($output[1][0])) {
             $libs = $output[1][0];
-            $envs .= " LIBS=\"{$libs}\" ";
+            $libcpp = '';
+            if ($this->builder->getLib('icu')) {
+                $libcpp = $this instanceof LinuxLibraryBase ? ' -lstdc++' : ' -lc++';
+            }
+            $envs .= " LIBS=\"{$libs}{$libcpp}\" ";
         }
 
         FileSystem::resetDir($this->source_dir . '/build');
@@ -44,8 +61,8 @@ trait postgresql
         # 有静态链接配置  参考文件： src/interfaces/libpq/Makefile
         shell()->cd($this->source_dir . '/build')
             ->exec('sed -i.backup "s/invokes exit\'; exit 1;/invokes exit\';/"  ../src/interfaces/libpq/Makefile')
-            ->exec(' sed -i.backup "293 s/^/#$/"  ../src/Makefile.shlib')
-            ->exec('sed -i.backup "441 s/^/#$/"  ../src/Makefile.shlib');
+            ->exec('sed -i.backup "278 s/^/# /"  ../src/Makefile.shlib')
+            ->exec('sed -i.backup "402 s/^/# /"  ../src/Makefile.shlib');
 
         // configure
         shell()->cd($this->source_dir . '/build')
@@ -59,25 +76,23 @@ trait postgresql
                 '--with-libxml ' .
                 ($this->builder->getLib('icu') ? '--with-icu ' : '--without-icu ') .
                 '--without-ldap ' .
-                '--without-libxslt ' .
+                ($this->builder->getLib('libxslt') ? '--with-libxslt ' : '--without-libxslt ') .
+                ($this->builder->getLib('zstd') ? '--with-zstd ' : '--without-zstd ') .
                 '--without-lz4 ' .
-                '--without-zstd ' .
                 '--without-perl ' .
                 '--without-python ' .
                 '--without-pam ' .
-                '--without-ldap ' .
                 '--without-bonjour ' .
                 '--without-tcl '
             );
+        // ($this->builder->getLib('ldap') ? '--with-ldap ' : '--without-ldap ') .
 
         // build
         shell()->cd($this->source_dir . '/build')
             ->exec($envs . ' make -C src/bin/pg_config install')
             ->exec($envs . ' make -C src/include install')
             ->exec($envs . ' make -C src/common install')
-            ->exec($envs . ' make -C src/backend/port install')
             ->exec($envs . ' make -C src/port install')
-            ->exec($envs . ' make -C src/backend/libpq install')
             ->exec($envs . ' make -C src/interfaces/libpq install');
 
         // remove dynamic libs

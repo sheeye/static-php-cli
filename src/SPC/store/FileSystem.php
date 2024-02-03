@@ -14,13 +14,13 @@ class FileSystem
     /**
      * @throws FileSystemException
      */
-    public static function loadConfigArray(string $config): array
+    public static function loadConfigArray(string $config, ?string $config_dir = null): array
     {
         $whitelist = ['ext', 'lib', 'source'];
         if (!in_array($config, $whitelist)) {
             throw new FileSystemException('Reading ' . $config . '.json is not allowed');
         }
-        $tries = [
+        $tries = $config_dir !== null ? [FileSystem::convertPath($config_dir . '/' . $config . '.json')] : [
             WORKING_DIR . '/config/' . $config . '.json',
             ROOT_DIR . '/config/' . $config . '.json',
         ];
@@ -55,7 +55,7 @@ class FileSystem
     /**
      * @throws FileSystemException
      */
-    public static function replaceFileStr(string $filename, mixed $search = null, mixed $replace = null): bool|int
+    public static function replaceFileStr(string $filename, mixed $search = null, mixed $replace = null): false|int
     {
         return self::replaceFile($filename, REPLACE_FILE_STR, $search, $replace);
     }
@@ -63,7 +63,7 @@ class FileSystem
     /**
      * @throws FileSystemException
      */
-    public static function replaceFileRegex(string $filename, mixed $search = null, mixed $replace = null): bool|int
+    public static function replaceFileRegex(string $filename, mixed $search = null, mixed $replace = null): false|int
     {
         return self::replaceFile($filename, REPLACE_FILE_PREG, $search, $replace);
     }
@@ -71,7 +71,7 @@ class FileSystem
     /**
      * @throws FileSystemException
      */
-    public static function replaceFileUser(string $filename, mixed $callback = null): bool|int
+    public static function replaceFileUser(string $filename, mixed $callback = null): false|int
     {
         return self::replaceFile($filename, REPLACE_FILE_USER, $callback);
     }
@@ -132,6 +132,7 @@ class FileSystem
                 break;
             case 'Linux':
             case 'Darwin':
+            case 'BSD':
                 f_passthru('cp -r "' . $src_path . '" "' . $dst_path . '"');
                 break;
         }
@@ -151,85 +152,45 @@ class FileSystem
         if (self::$_extract_hook === []) {
             SourcePatcher::init();
         }
+        if (!is_dir(SOURCE_PATH)) {
+            self::createDir(SOURCE_PATH);
+        }
         if ($move_path !== null) {
             $move_path = SOURCE_PATH . '/' . $move_path;
         }
-        logger()->info("extracting {$name} source");
+        logger()->info("extracting {$name} source to " . ($move_path ?? SOURCE_PATH . "/{$name}") . ' ...');
         try {
-            $target = $move_path ?? (SOURCE_PATH . "/{$name}");
+            $target = self::convertPath($move_path ?? (SOURCE_PATH . "/{$name}"));
             // Git source, just move
-            if (is_dir($filename)) {
-                self::copyDir($filename, $target);
+            if (is_dir(self::convertPath($filename))) {
+                self::copyDir(self::convertPath($filename), $target);
                 self::emitSourceExtractHook($name);
                 return;
             }
-
-            if (PHP_OS_FAMILY === 'Darwin' || PHP_OS_FAMILY === 'Linux') {
-                if (f_mkdir(directory: $target, recursive: true) !== true) {
-                    throw new FileSystemException('create ' . $name . 'source dir failed');
-                }
-                switch (self::extname($filename)) {
-                    case 'xz':
-                    case 'txz':
-                        f_passthru("tar -xf {$filename} -C {$target} --strip-components 1");
-                        // f_passthru("cat {$filename} | xz -d | tar -x -C " . SOURCE_PATH . "/{$name} --strip-components 1");
-                        break;
-                    case 'gz':
-                    case 'tgz':
-                        f_passthru("tar -xzf {$filename} -C {$target} --strip-components 1");
-                        break;
-                    case 'bz2':
-                        f_passthru("tar -xjf {$filename} -C {$target} --strip-components 1");
-                        break;
-                    case 'zip':
-                        f_passthru("unzip {$filename} -d {$target}");
-                        break;
-                        // case 'zstd':
-                        // case 'zst':
-                        //     passthru('cat ' . $filename . ' | zstd -d | tar -x -C ".SOURCE_PATH . "/' . $name . ' --strip-components 1', $ret);
-                        //     break;
-                    case 'tar':
-                        f_passthru("tar -xf {$filename} -C {$target} --strip-components 1");
-                        break;
-                    default:
-                        throw new FileSystemException('unknown archive format: ' . $filename);
-                }
-            } elseif (PHP_OS_FAMILY === 'Windows') {
-                // find 7z
-                $_7zExe = self::findCommandPath('7z', [
-                    'C:\Program Files\7-Zip-Zstandard',
-                    'C:\Program Files (x86)\7-Zip-Zstandard',
-                    'C:\Program Files\7-Zip',
-                    'C:\Program Files (x86)\7-Zip',
-                ]);
-                if (!$_7zExe) {
-                    throw new FileSystemException('windows needs 7z to unpack');
-                }
-                f_mkdir(SOURCE_PATH . "/{$name}", recursive: true);
-                switch (self::extname($filename)) {
-                    case 'zstd':
-                    case 'zst':
-                        if (!str_contains($_7zExe, 'Zstandard')) {
-                            throw new FileSystemException("zstd is not supported: {$filename}");
-                        }
-                        // no break
-                    case 'xz':
-                    case 'txz':
-                    case 'gz':
-                    case 'tgz':
-                    case 'bz2':
-                        f_passthru("\"{$_7zExe}\" x -so {$filename} | tar -f - -x -C {$target} --strip-components 1");
-                        break;
-                    case 'tar':
-                        f_passthru("tar -xf {$filename} -C {$target} --strip-components 1");
-                        break;
-                    case 'zip':
-                        f_passthru("\"{$_7zExe}\" x {$filename} -o{$target}");
-                        break;
-                    default:
-                        throw new FileSystemException("unknown archive format: {$filename}");
-                }
+            if (f_mkdir(directory: $target, recursive: true) !== true) {
+                throw new FileSystemException('create ' . $name . 'source dir failed');
             }
+
+            if (in_array(PHP_OS_FAMILY, ['Darwin', 'Linux', 'BSD'])) {
+                match (self::extname($filename)) {
+                    'tar', 'xz', 'txz' => f_passthru("tar -xf {$filename} -C {$target} --strip-components 1"),
+                    'tgz', 'gz' => f_passthru("tar -xzf {$filename} -C {$target} --strip-components 1"),
+                    'bz2' => f_passthru("tar -xjf {$filename} -C {$target} --strip-components 1"),
+                    'zip' => f_passthru("unzip {$filename} -d {$target}"),
+                    default => throw new FileSystemException('unknown archive format: ' . $filename),
+                };
+            } elseif (PHP_OS_FAMILY === 'Windows') {
+                // use php-sdk-binary-tools/bin/7za.exe
+                $_7z = self::convertPath(PHP_SDK_PATH . '/bin/7za.exe');
+                f_mkdir(SOURCE_PATH . "/{$name}", recursive: true);
+                match (self::extname($filename)) {
+                    'tar' => f_passthru("tar -xf {$filename} -C {$target} --strip-components 1"),
+                    'xz', 'txz', 'gz', 'tgz', 'bz2' => f_passthru("\"{$_7z}\" x -so {$filename} | tar -f - -x -C {$target} --strip-components 1"),
+                    'zip' => f_passthru("\"{$_7z}\" x {$filename} -o{$target} -y"),
+                    default => throw new FileSystemException("unknown archive format: {$filename}"),
+                };
+            }
+            self::emitSourceExtractHook($name);
         } catch (RuntimeException $e) {
             if (PHP_OS_FAMILY === 'Windows') {
                 f_passthru('rmdir /s /q ' . SOURCE_PATH . "/{$name}");
@@ -256,14 +217,13 @@ class FileSystem
     /**
      * 递归或非递归扫描目录，可返回相对目录的文件列表或绝对目录的文件列表
      *
-     * @param  string      $dir         目录
-     * @param  bool        $recursive   是否递归扫描子目录
-     * @param  bool|string $relative    是否返回相对目录，如果为true则返回相对目录，如果为false则返回绝对目录
-     * @param  bool        $include_dir 非递归模式下，是否包含目录
-     * @return array|false
+     * @param string      $dir         目录
+     * @param bool        $recursive   是否递归扫描子目录
+     * @param bool|string $relative    是否返回相对目录，如果为true则返回相对目录，如果为false则返回绝对目录
+     * @param bool        $include_dir 非递归模式下，是否包含目录
      * @since 2.5
      */
-    public static function scanDirFiles(string $dir, bool $recursive = true, bool|string $relative = false, bool $include_dir = false): bool|array
+    public static function scanDirFiles(string $dir, bool $recursive = true, bool|string $relative = false, bool $include_dir = false): array|false
     {
         $dir = self::convertPath($dir);
         // 不是目录不扫，直接 false 处理
@@ -395,7 +355,7 @@ class FileSystem
     public static function createDir(string $path): void
     {
         if (!is_dir($path) && !f_mkdir($path, 0755, true) && !is_dir($path)) {
-            throw new FileSystemException(sprintf('无法建立目录：%s', $path));
+            throw new FileSystemException(sprintf('Unable to create dir: %s', $path));
         }
     }
 
@@ -403,9 +363,9 @@ class FileSystem
      * @param  mixed               ...$args Arguments passed to file_put_contents
      * @throws FileSystemException
      */
-    public static function writeFile(string $path, mixed $content, ...$args): bool|string|int
+    public static function writeFile(string $path, mixed $content, ...$args): bool|int|string
     {
-        $dir = pathinfo($path, PATHINFO_DIRNAME);
+        $dir = pathinfo(self::convertPath($path), PATHINFO_DIRNAME);
         if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
             throw new FileSystemException('Write file failed, cannot create parent directory: ' . $dir);
         }
@@ -446,7 +406,7 @@ class FileSystem
     /**
      * @throws FileSystemException
      */
-    private static function replaceFile(string $filename, int $replace_type = REPLACE_FILE_STR, mixed $callback_or_search = null, mixed $to_replace = null): bool|int
+    private static function replaceFile(string $filename, int $replace_type = REPLACE_FILE_STR, mixed $callback_or_search = null, mixed $to_replace = null): false|int
     {
         logger()->debug('Replacing file with type[' . $replace_type . ']: ' . $filename);
         $file = self::readFile($filename);

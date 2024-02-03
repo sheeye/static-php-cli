@@ -106,7 +106,8 @@
         "source": "ext-glfw",
         "lib-depends": [
             "glfw"
-        ]
+        ],
+        "lib-depends-windows": []
     },
     "gmp": {
         "type": "builtin",
@@ -118,9 +119,13 @@
     "iconv": {
         "type": "builtin",
         "arg-type": "with-prefix",
-        "lib-depends-windows": [
+        "lib-depends": [
             "libiconv"
         ]
+    },
+    "igbinary": {
+        "type": "external",
+        "source": "igbinary"
     },
     "imagick": {
         "type": "external",
@@ -132,12 +137,12 @@
     },
     "imap": {
         "type": "builtin",
-        "arg-type": "with",
+        "arg-type": "custom",
         "lib-depends": [
             "imap"
         ],
         "lib-suggests": [
-            "kerberos"
+            "openssl"
         ]
     },
     "inotify": {
@@ -146,16 +151,22 @@
     },
     "intl": {
         "type": "builtin",
-        "cpp-extension": true,
         "lib-depends": [
             "icu"
         ]
     },
     "ldap": {
         "type": "builtin",
-        "arg-type": "with",
+        "arg-type": "with-prefix",
         "lib-depends": [
             "ldap"
+        ],
+        "lib-suggests": [
+            "gmp",
+            "libsodium"
+        ],
+        "ext-suggests": [
+            "openssl"
         ]
     },
     "mbregex": {
@@ -163,14 +174,14 @@
         "arg-type": "custom",
         "ext-depends": [
             "mbstring"
+        ],
+        "lib-depends": [
+            "onig"
         ]
     },
     "mbstring": {
         "type": "builtin",
-        "arg-type": "custom",
-        "lib-depends": [
-            "onig"
-        ]
+        "arg-type": "custom"
     },
     "memcache": {
         "type": "external",
@@ -222,13 +233,26 @@
         ]
     },
     "opcache": {
-        "type": "builtin"
+        "type": "builtin",
+        "arg-type": "custom"
     },
     "openssl": {
         "type": "builtin",
-        "arg-type": "with",
+        "arg-type": "custom",
+        "arg-type-windows": "with",
         "lib-depends": [
-            "openssl"
+            "openssl",
+            "zlib"
+        ],
+        "ext-depends": [
+            "zlib"
+        ]
+    },
+    "password-argon2": {
+        "type": "builtin",
+        "arg-type": "with-prefix",
+        "lib-depends": [
+            "libargon2"
         ]
     },
     "pcntl": {
@@ -296,6 +320,11 @@
             "aspell"
         ]
     },
+    "rar": {
+        "type": "external",
+        "source": "rar",
+        "cpp-extension": true
+    },
     "readline": {
         "type": "builtin",
         "arg-type": "with-prefix",
@@ -308,7 +337,12 @@
         "source": "redis",
         "arg-type": "custom",
         "ext-suggests": [
-            "session"
+            "session",
+            "igbinary"
+        ],
+        "lib-suggests": [
+            "zstd",
+            "liblz4"
         ]
     },
     "session": {
@@ -323,6 +357,18 @@
         "arg-type-windows": "with",
         "lib-depends": [
             "libxml2"
+        ]
+    },
+    "snappy": {
+        "type": "external",
+        "source": "ext-snappy",
+        "cpp-extension": true,
+        "arg-type": "custom",
+        "lib-depends": [
+            "snappy"
+        ],
+        "ext-suggest": [
+            "apcu"
         ]
     },
     "snmp": {
@@ -356,6 +402,17 @@
             "sqlite"
         ]
     },
+    "sqlsrv": {
+        "type": "external",
+        "source": "sqlsrv",
+        "lib-depends": [
+            "unixodbc"
+        ],
+        "ext-depends-linux": [
+            "pcntl"
+        ],
+        "cpp-extension": true
+    },
     "ssh2": {
         "type": "external",
         "source": "ext-ssh2",
@@ -369,17 +426,50 @@
         "source": "swoole",
         "arg-type": "custom",
         "cpp-extension": true,
+        "unix-only": true,
         "lib-depends": [
-            "openssl"
+            "libcares",
+            "brotli",
+            "nghttp2",
+            "zlib"
         ],
         "ext-depends": [
-            "openssl"
+            "openssl",
+            "curl"
         ],
         "ext-suggests": [
-            "curl",
-            "pgsql"
+            "swoole-hook-pgsql",
+            "swoole-hook-mysql",
+            "swoole-hook-sqlite"
+        ]
+    },
+    "swoole-hook-mysql": {
+        "type": "addon",
+        "arg-type": "custom",
+        "ext-depends": [
+            "mysqlnd",
+            "pdo",
+            "pdo_mysql"
         ],
-        "unix-only": true
+        "ext-suggests": [
+            "mysqli"
+        ]
+    },
+    "swoole-hook-pgsql": {
+        "type": "addon",
+        "arg-type": "custom",
+        "ext-depends": [
+            "pgsql",
+            "pdo"
+        ]
+    },
+    "swoole-hook-sqlite": {
+        "type": "addon",
+        "arg-type": "custom",
+        "ext-depends": [
+            "sqlite3",
+            "pdo"
+        ]
     },
     "swow": {
         "type": "external",
@@ -408,13 +498,31 @@
     },
     "tidy": {
         "type": "builtin",
-        "arg-type": "with",
+        "arg-type": "with-prefix",
         "lib-depends": [
             "tidy"
         ]
     },
     "tokenizer": {
         "type": "builtin"
+    },
+    "uv": {
+        "type": "external",
+        "source": "ext-uv",
+        "arg-type": "with-prefix",
+        "lib-depends": [
+            "libuv"
+        ],
+        "ext-depends": [
+            "sockets"
+        ]
+    },
+    "xhprof": {
+        "type": "external",
+        "source": "xhprof",
+        "ext-depends": [
+            "ctype"
+        ]
     },
     "xlswriter": {
         "type": "external",
@@ -476,7 +584,7 @@
     },
     "zlib": {
         "type": "builtin",
-        "arg-type": "with",
+        "arg-type": "custom",
         "arg-type-windows": "enable",
         "lib-depends": [
             "zlib"

@@ -5,17 +5,18 @@ declare(strict_types=1);
 namespace SPC\builder\extension;
 
 use SPC\builder\Extension;
+use SPC\builder\linux\LinuxBuilder;
 use SPC\util\CustomExt;
 
 #[CustomExt('imagick')]
 class imagick extends Extension
 {
-    public function patchBeforeBuildconf(): bool
+    public function patchBeforeMake(): bool
     {
-        // linux need to link library manually, we add it to extra-libs
+        // imagick may call omp_pause_all which requires -lgomp
         $extra_libs = $this->builder->getOption('extra-libs', '');
-        if (!str_contains($extra_libs, 'libMagickCore')) {
-            $extra_libs .= ' /usr/lib/libMagick++-7.Q16HDRI.a /usr/lib/libMagickCore-7.Q16HDRI.a /usr/lib/libMagickWand-7.Q16HDRI.a';
+        if ($this->builder instanceof LinuxBuilder) {
+            $extra_libs .= ' -lgomp ';
         }
         $this->builder->setOption('extra-libs', $extra_libs);
         return true;

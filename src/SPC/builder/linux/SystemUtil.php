@@ -20,6 +20,19 @@ class SystemUtil
             'ver' => 'unknown',
         ];
         switch (true) {
+            case file_exists('/etc/centos-release'):
+                $lines = file('/etc/centos-release');
+                goto rh;
+            case file_exists('/etc/redhat-release'):
+                $lines = file('/etc/redhat-release');
+                rh:
+                foreach ($lines as $line) {
+                    if (preg_match('/release\s+(\d*(\.\d+)*)/', $line, $matches)) {
+                        $ret['dist'] = 'redhat';
+                        $ret['ver'] = $matches[1];
+                    }
+                }
+                break;
             case file_exists('/etc/os-release'):
                 $lines = file('/etc/os-release');
                 foreach ($lines as $line) {
@@ -36,21 +49,13 @@ class SystemUtil
                     $ret['dist'] = 'redhat';
                 }
                 break;
-            case file_exists('/etc/centos-release'):
-                $lines = file('/etc/centos-release');
-                goto rh;
-            case file_exists('/etc/redhat-release'):
-                $lines = file('/etc/redhat-release');
-                rh:
-                foreach ($lines as $line) {
-                    if (preg_match('/release\s+(\d+(\.\d+)*)/', $line, $matches)) {
-                        $ret['dist'] = 'redhat';
-                        $ret['ver'] = $matches[1];
-                    }
-                }
-                break;
         }
         return $ret;
+    }
+
+    public static function isMuslDist(): bool
+    {
+        return static::getOSRelease()['dist'] === 'alpine';
     }
 
     public static function getCpuCount(): int
@@ -121,7 +126,7 @@ class SystemUtil
 
     public static function checkCCFlag(string $flag, string $cc): string
     {
-        [$ret] = shell()->execWithResult("echo | {$cc} -E -x c - {$flag}");
+        [$ret] = shell()->execWithResult("echo | {$cc} -E -x c - {$flag} 2>/dev/null");
         if ($ret != 0) {
             return '';
         }
@@ -203,5 +208,22 @@ class SystemUtil
             $ret[] = $path;
         }
         return $ret;
+    }
+
+    /**
+     * Get fully-supported linux distros.
+     *
+     * @return string[] List of supported Linux distro name for doctor
+     */
+    public static function getSupportedDistros(): array
+    {
+        return [
+            // debian-like
+            'debian', 'ubuntu', 'Deepin',
+            // rhel-like
+            'redhat',
+            // alpine
+            'alpine',
+        ];
     }
 }

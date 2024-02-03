@@ -2,14 +2,14 @@
     "brotli": {
         "source": "brotli",
         "static-libs-unix": [
-            "libbrotlidec-static.a",
-            "libbrotlienc-static.a",
-            "libbrotlicommon-static.a"
+            "libbrotlidec.a",
+            "libbrotlienc.a",
+            "libbrotlicommon.a"
         ],
         "static-libs-windows": [
-            "brotlicommon-static.lib",
-            "brotlienc-static.lib",
-            "brotlidec-static.lib"
+            "brotlicommon.lib",
+            "brotlienc.lib",
+            "brotlidec.lib"
         ],
         "headers": [
             "brotli"
@@ -42,14 +42,14 @@
             "curl"
         ],
         "lib-depends-unix": [
+            "openssl",
             "zlib"
         ],
         "lib-suggests": [
             "libssh2",
             "brotli",
             "nghttp2",
-            "zstd",
-            "openssl"
+            "zstd"
         ],
         "lib-suggests-windows": [
             "zlib",
@@ -57,12 +57,11 @@
             "brotli",
             "nghttp2",
             "zstd",
-            "openssl",
-            "idn2",
-            "psl"
+            "openssl"
         ],
         "frameworks": [
             "CoreFoundation",
+            "CoreServices",
             "SystemConfiguration"
         ]
     },
@@ -110,6 +109,7 @@
     },
     "icu": {
         "source": "icu",
+        "cpp-library": true,
         "static-libs-unix": [
             "libicui18n.a",
             "libicuio.a",
@@ -121,28 +121,68 @@
         "source": "imagemagick",
         "static-libs-unix": [
             "libMagick++-7.Q16HDRI.a",
-            "libMagickCore-7.Q16HDRI.a",
-            "libMagickWand-7.Q16HDRI.a"
+            "libMagickWand-7.Q16HDRI.a",
+            "libMagickCore-7.Q16HDRI.a"
         ],
         "lib-depends": [
             "zlib",
             "libpng",
             "libjpeg",
-            "bzip2",
             "libwebp",
             "freetype"
         ],
         "lib-suggests": [
             "zstd",
             "xz",
+            "bzip2",
             "libzip",
             "libxml2"
+        ]
+    },
+    "imap": {
+        "source": "imap",
+        "static-libs-unix": [
+            "libc-client.a"
+        ],
+        "lib-suggests": [
+            "openssl"
+        ]
+    },
+    "ldap": {
+        "source": "ldap",
+        "static-libs-unix": [
+            "liblber.a",
+            "libldap.a"
+        ],
+        "lib-depends": [
+            "openssl",
+            "zlib",
+            "gmp",
+            "libsodium"
+        ]
+    },
+    "libargon2": {
+        "source": "libargon2",
+        "static-libs-unix": [
+            "libargon2.a"
         ]
     },
     "libavif": {
         "source": "libavif",
         "static-libs-unix": [
             "libavif.a"
+        ]
+    },
+    "libcares": {
+        "source": "libcares",
+        "static-libs-unix": [
+            "libcares.a"
+        ],
+        "headers-unix": [
+            "ares.h",
+            "ares_dns.h",
+            "ares_nameser.h",
+            "ares_rules.h"
         ]
     },
     "libevent": {
@@ -194,10 +234,10 @@
             "libturbojpeg.a"
         ]
     },
-    "libmcrypt": {
-        "source": "libmcrypt",
+    "liblz4": {
+        "source": "liblz4",
         "static-libs-unix": [
-            "libmcrypt.a"
+            "liblz4.a"
         ]
     },
     "libmemcached": {
@@ -210,7 +250,7 @@
     "libpng": {
         "source": "libpng",
         "static-libs-unix": [
-            "libpng.a"
+            "libpng16.a"
         ],
         "static-libs-windows": [
             "libpng16_static.lib"
@@ -254,6 +294,12 @@
             "zlib"
         ]
     },
+    "libuv": {
+        "source": "libuv",
+        "static-libs-unix": [
+            "libuv.a"
+        ]
+    },
     "libwebp": {
         "source": "libwebp",
         "static-libs-unix": [
@@ -283,14 +329,8 @@
         ],
         "lib-suggests": [
             "xz",
-            "zlib",
-            "icu"
-        ],
-        "lib-suggests-windows": [
             "icu",
-            "xz",
-            "zlib",
-            "pthreads4w"
+            "zlib"
         ]
     },
     "libxslt": {
@@ -338,12 +378,6 @@
             "xz",
             "zstd",
             "openssl"
-        ]
-    },
-    "mcrypt": {
-        "source": "mcrypt",
-        "static-libs-unix": [
-            "libmcrypt.a"
         ]
     },
     "ncurses": {
@@ -422,19 +456,10 @@
             "readline"
         ],
         "lib-suggests": [
-            "icu"
-        ]
-    },
-    "pthreads4w": {
-        "source": "pthreads4w",
-        "static-libs-windows": [
-            "libpthreadVC3.lib"
-        ],
-        "headers-windows": [
-            "_ptw32.h",
-            "pthread.h",
-            "sched.h",
-            "semaphore.h"
+            "icu",
+            "libxslt",
+            "ldap",
+            "zstd"
         ]
     },
     "readline": {
@@ -446,6 +471,21 @@
             "ncurses"
         ]
     },
+    "snappy": {
+        "source": "snappy",
+        "static-libs-unix": [
+            "libsnappy.a"
+        ],
+        "headers-unix": [
+            "snappy.h",
+            "snappy-c.h",
+            "snappy-sinksource.h",
+            "snappy-stubs-public.h"
+        ],
+        "lib-depends": [
+            "zlib"
+        ]
+    },
     "sqlite": {
         "source": "sqlite",
         "static-libs-unix": [
@@ -454,6 +494,23 @@
         "headers-unix": [
             "sqlite3.h",
             "sqlite3ext.h"
+        ]
+    },
+    "tidy": {
+        "source": "tidy",
+        "static-libs-unix": [
+            "libtidy.a"
+        ]
+    },
+    "unixodbc": {
+        "source": "unixodbc",
+        "static-libs-unix": [
+            "libodbc.a",
+            "libodbccr.a",
+            "libodbcinst.a"
+        ],
+        "lib-depends": [
+            "libiconv"
         ]
     },
     "xz": {

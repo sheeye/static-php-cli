@@ -17,6 +17,9 @@ class UnixShell
 
     public function __construct(?bool $debug = null)
     {
+        if (PHP_OS_FAMILY === 'Windows') {
+            throw new RuntimeException('Windows cannot use UnixShell');
+        }
         $this->debug = $debug ?? defined('DEBUG_MODE');
     }
 
