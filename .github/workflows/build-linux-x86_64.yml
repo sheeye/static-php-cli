@@ -28,7 +28,7 @@ on:
       with-libs:
         description: --with-libs
         type: string
-        default: 'freetype,libjpeg,libavif,libwebp'
+        default: '--with-libs freetype,libjpeg,libavif,libwebp'
       extensions:
         description: extensions to compile (comma separated)
         required: true
